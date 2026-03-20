@@ -5,6 +5,7 @@ import com.fadesp.paymentsapi.dto.PaymentResponseDTO;
 import com.fadesp.paymentsapi.enums.PaymentStatus;
 import com.fadesp.paymentsapi.service.PaymentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +20,7 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<PaymentResponseDTO> create(@RequestBody PaymentRequestDTO dto) {
         return ResponseEntity.status(201).body(paymentService.create(dto));
     }
