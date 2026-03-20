@@ -8,7 +8,6 @@ import com.fadesp.paymentsapi.exception.InvalidStatusTransitionException;
 import com.fadesp.paymentsapi.exception.PaymentNotFoundException;
 import com.fadesp.paymentsapi.model.Payment;
 import com.fadesp.paymentsapi.repository.PaymentRepository;
-import com.fadesp.paymentsapi.specification.PaymentSpecification;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
