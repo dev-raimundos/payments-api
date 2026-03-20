@@ -3,14 +3,12 @@ package com.fadesp.paymentsapi.model;
 import com.fadesp.paymentsapi.enums.PaymentMethod;
 import com.fadesp.paymentsapi.enums.PaymentStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
