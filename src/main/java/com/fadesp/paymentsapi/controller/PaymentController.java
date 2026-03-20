@@ -38,12 +38,7 @@ public class PaymentController {
             @RequestParam(required = false) Integer debtCode,
             @RequestParam(required = false) String cpfCnpj,
             @RequestParam(required = false) PaymentStatus status) {
-
-        if (debtCode != null) return ResponseEntity.ok(paymentService.findByDebtCode(debtCode));
-        if (cpfCnpj != null) return ResponseEntity.ok(paymentService.findByCpfCnpj(cpfCnpj));
-        if (status != null) return ResponseEntity.ok(paymentService.findByStatus(status));
-
-        return ResponseEntity.ok(paymentService.findAll());
+        return ResponseEntity.ok(paymentService.findWithFilters(debtCode, cpfCnpj, status));
     }
 
     @DeleteMapping("/{id}")
