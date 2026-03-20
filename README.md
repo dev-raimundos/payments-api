@@ -93,13 +93,16 @@ Regras de transição de status:
 ### Listar pagamentos
 `GET /payments`
 
-Suporta filtros opcionais via query params:
+Suporta filtros opcionais e combináveis via query params:
 
-| Parâmetro  | Exemplo                          |
-|------------|----------------------------------|
-| `debtCode` | `/payments?debtCode=1001`        |
-| `cpfCnpj`  | `/payments?cpfCnpj=123.456.789-00` |
-| `status`   | `/payments?status=PENDENTE_PROCESSAMENTO` |
+| Parâmetro  | Exemplo                                             |
+|------------|-----------------------------------------------------|
+| `debtCode` | `/payments?debtCode=1001`                           |
+| `cpfCnpj`  | `/payments?cpfCnpj=123.456.789-00`                  |
+| `status`   | `/payments?status=PENDENTE_PROCESSAMENTO`           |
+| combinados | `/payments?debtCode=1001&status=PROCESSADO_SUCESSO` |
+
+> Os filtros podem ser combinados livremente. Sem parâmetros, retorna todos os pagamentos.
 
 ---
 
@@ -122,12 +125,31 @@ src/main/java/com/fadesp/paymentsapi
 ├── model           # Entidade JPA
 ├── dto             # Objetos de entrada e saída
 ├── enums           # PaymentMethod e PaymentStatus
+├── specification   # Filtros dinâmicos com JPA Specification
 └── exception       # Exceptions customizadas e handler global
+```
+
+---
+
+## Testes
+
+O projeto conta com testes unitários cobrindo todos os cenários de negócio do `PaymentService`:
+
+- Criação de pagamento com sucesso
+- Validações de número do cartão
+- Transições de status válidas e inválidas
+- Exclusão lógica e suas restrições
+- Listagem com filtros
+
+Para rodar os testes:
+
+```bash
+./mvnw test
 ```
 
 ---
 
 ## Autor
 
-Raimundos Marques da Silva Neto
+Raimundos Marques da Silva Neto  
 [github.com/dev-raimundos](https://github.com/dev-raimundos)
