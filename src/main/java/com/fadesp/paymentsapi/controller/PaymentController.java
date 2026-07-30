@@ -2,15 +2,16 @@ package com.fadesp.paymentsapi.controller;
 
 import com.fadesp.paymentsapi.dto.PaymentRequestDTO;
 import com.fadesp.paymentsapi.dto.PaymentResponseDTO;
+import com.fadesp.paymentsapi.dto.UpdateStatusRequestDTO;
 import com.fadesp.paymentsapi.enums.PaymentStatus;
 import com.fadesp.paymentsapi.service.PaymentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/payments")
@@ -21,16 +22,15 @@ public class PaymentController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<PaymentResponseDTO> create(@RequestBody PaymentRequestDTO dto) {
+    public ResponseEntity<PaymentResponseDTO> create(@Valid @RequestBody PaymentRequestDTO dto) {
         return ResponseEntity.status(201).body(paymentService.create(dto));
     }
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<PaymentResponseDTO> updateStatus(
             @PathVariable Long id,
-            @RequestBody Map<String, String> body) {
-        PaymentStatus newStatus = PaymentStatus.valueOf(body.get("status"));
-        return ResponseEntity.ok(paymentService.updateStatus(id, newStatus));
+            @Valid @RequestBody UpdateStatusRequestDTO body) {
+        return ResponseEntity.ok(paymentService.updateStatus(id, body.getStatus()));
     }
 
     @GetMapping
