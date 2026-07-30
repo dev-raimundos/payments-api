@@ -32,7 +32,7 @@ public class Payment {
 
     private String cardNumber;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
