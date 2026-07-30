@@ -68,6 +68,12 @@ Métodos de pagamento aceitos: `boleto`, `pix`, `cartao_credito`, `cartao_debito
 
 > O campo `cardNumber` é obrigatório apenas para `cartao_credito` e `cartao_debito`.
 
+**Validações:**
+- `debtCode` e `amount` devem ser números positivos (maiores que zero).
+- `cpfCnpj` é obrigatório e deve conter 11 (CPF) ou 14 (CNPJ) dígitos numéricos; pontuação é removida automaticamente antes de salvar.
+- `cardNumber`, quando exigido, deve conter apenas dígitos (13 a 19).
+- O número do cartão retornado nas respostas é sempre mascarado (ex: `**** **** **** 1111`).
+
 ---
 
 ### Atualizar status do pagamento
@@ -87,6 +93,8 @@ Regras de transição de status:
 | `PROCESSADO_FALHA`         | `PENDENTE_PROCESSAMENTO`                          |
 | `PROCESSADO_SUCESSO`       | *(nenhuma alteração permitida)*                   |
 | `INATIVO`                  | *(nenhuma alteração permitida)*                   |
+
+> O status `INATIVO` só pode ser atingido pelo endpoint de exclusão lógica (`DELETE /payments/{id}`), nunca por este endpoint.
 
 ---
 
