@@ -6,12 +6,14 @@ import com.fadesp.paymentsapi.enums.PaymentMethod;
 import com.fadesp.paymentsapi.enums.PaymentStatus;
 import com.fadesp.paymentsapi.exception.InvalidStatusTransitionException;
 import com.fadesp.paymentsapi.exception.PaymentNotFoundException;
+import com.fadesp.paymentsapi.exception.PaymentValidationException;
 import com.fadesp.paymentsapi.model.Payment;
 import com.fadesp.paymentsapi.repository.PaymentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -43,7 +45,7 @@ class PaymentServiceTest {
         pendingPayment = Payment.builder()
                 .id(1L)
                 .debtCode(1001)
-                .cpfCnpj("123.456.789-00")
+                .cpfCnpj("12345678900")
                 .paymentMethod(PaymentMethod.pix)
                 .amount(new BigDecimal("150.00"))
                 .status(PaymentStatus.PENDENTE_PROCESSAMENTO)
@@ -80,12 +82,34 @@ class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("Deve criar pagamento com cartão de crédito com sucesso")
+    @DisplayName("Deve normalizar o CPF/CNPJ removendo pontuação antes de salvar")
+    void shouldNormalizeCpfCnpjBeforeSaving() {
+        when(paymentRepository.save(any(Payment.class))).thenReturn(pendingPayment);
+
+        paymentService.create(pixRequest);
+
+        ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
+        verify(paymentRepository).save(captor.capture());
+        assertThat(captor.getValue().getCpfCnpj()).isEqualTo("12345678900");
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao criar pagamento com CPF/CNPJ de tamanho inválido")
+    void shouldThrowWhenCpfCnpjHasInvalidLength() {
+        pixRequest.setCpfCnpj("123.456.789");
+
+        assertThatThrownBy(() -> paymentService.create(pixRequest))
+                .isInstanceOf(PaymentValidationException.class)
+                .hasMessageContaining("CPF/CNPJ inválido");
+    }
+
+    @Test
+    @DisplayName("Deve criar pagamento com cartão de crédito com sucesso e retornar número mascarado")
     void shouldCreateCardPaymentSuccessfully() {
         Payment cardPayment = Payment.builder()
                 .id(2L)
                 .debtCode(1002)
-                .cpfCnpj("123.456.789-00")
+                .cpfCnpj("12345678900")
                 .paymentMethod(PaymentMethod.cartao_credito)
                 .cardNumber("4111111111111111")
                 .amount(new BigDecimal("300.00"))
@@ -97,7 +121,7 @@ class PaymentServiceTest {
         PaymentResponseDTO response = paymentService.create(cardRequest);
 
         assertThat(response).isNotNull();
-        assertThat(response.getCardNumber()).isEqualTo("4111111111111111");
+        assertThat(response.getCardNumber()).isEqualTo("**** **** **** 1111");
         assertThat(response.getStatus()).isEqualTo(PaymentStatus.PENDENTE_PROCESSAMENTO);
     }
 
@@ -107,7 +131,7 @@ class PaymentServiceTest {
         cardRequest.setCardNumber(null);
 
         assertThatThrownBy(() -> paymentService.create(cardRequest))
-                .isInstanceOf(InvalidStatusTransitionException.class)
+                .isInstanceOf(PaymentValidationException.class)
                 .hasMessageContaining("Número do cartão é obrigatório");
     }
 
@@ -117,8 +141,18 @@ class PaymentServiceTest {
         pixRequest.setCardNumber("4111111111111111");
 
         assertThatThrownBy(() -> paymentService.create(pixRequest))
-                .isInstanceOf(InvalidStatusTransitionException.class)
+                .isInstanceOf(PaymentValidationException.class)
                 .hasMessageContaining("Número do cartão não deve ser informado");
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao criar pagamento com número de cartão inválido")
+    void shouldThrowWhenCardNumberHasInvalidFormat() {
+        cardRequest.setCardNumber("abc123");
+
+        assertThatThrownBy(() -> paymentService.create(cardRequest))
+                .isInstanceOf(PaymentValidationException.class)
+                .hasMessageContaining("Número do cartão inválido");
     }
 
     /**
@@ -131,7 +165,7 @@ class PaymentServiceTest {
         Payment saved = Payment.builder()
                 .id(1L)
                 .debtCode(1001)
-                .cpfCnpj("123.456.789-00")
+                .cpfCnpj("12345678900")
                 .paymentMethod(PaymentMethod.pix)
                 .amount(new BigDecimal("150.00"))
                 .status(PaymentStatus.PROCESSADO_SUCESSO)
@@ -163,7 +197,7 @@ class PaymentServiceTest {
 
         assertThatThrownBy(() -> paymentService.updateStatus(1L, PaymentStatus.PENDENTE_PROCESSAMENTO))
                 .isInstanceOf(InvalidStatusTransitionException.class)
-                .hasMessageContaining("processados com sucesso não podem ter o status alterado");
+                .hasMessageContaining("Não é possível alterar o status");
     }
 
     @Test
@@ -174,7 +208,7 @@ class PaymentServiceTest {
 
         assertThatThrownBy(() -> paymentService.updateStatus(1L, PaymentStatus.PROCESSADO_SUCESSO))
                 .isInstanceOf(InvalidStatusTransitionException.class)
-                .hasMessageContaining("só podem voltar para Pendente de Processamento");
+                .hasMessageContaining("Não é possível alterar o status");
     }
 
     @Test
@@ -185,7 +219,17 @@ class PaymentServiceTest {
 
         assertThatThrownBy(() -> paymentService.updateStatus(1L, PaymentStatus.PENDENTE_PROCESSAMENTO))
                 .isInstanceOf(InvalidStatusTransitionException.class)
-                .hasMessageContaining("inativos não podem ter o status alterado");
+                .hasMessageContaining("Não é possível alterar o status");
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao tentar inativar pagamento pendente via update de status")
+    void shouldThrowWhenTryingToInactivateThroughUpdateStatus() {
+        when(paymentRepository.findById(1L)).thenReturn(Optional.of(pendingPayment));
+
+        assertThatThrownBy(() -> paymentService.updateStatus(1L, PaymentStatus.INATIVO))
+                .isInstanceOf(InvalidStatusTransitionException.class)
+                .hasMessageContaining("Não é possível alterar o status");
     }
 
     /**
